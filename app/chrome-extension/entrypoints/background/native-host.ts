@@ -149,7 +149,7 @@ export function connectNativeHost(port: number = NATIVE_HOST.DEFAULT_PORT) {
     });
 
     nativePort.onDisconnect.addListener(() => {
-      console.error(ERROR_MESSAGES.NATIVE_DISCONNECTED, chrome.runtime.lastError);
+      console.error(ERROR_MESSAGES.NATIVE_DISCONNECTED, chrome.runtime.lastError?.message);
       nativePort = null;
     });
 

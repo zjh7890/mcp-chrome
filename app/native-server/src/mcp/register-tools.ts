@@ -6,12 +6,24 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import nativeMessagingHostInstance from '../native-messaging-host';
 import { NativeMessageType, TOOL_SCHEMAS } from 'chrome-mcp-shared';
+import { getDynamicToolsManager } from './dynamic-tools';
+import { logger } from '../util/logger';
 
 export const setupTools = (server: Server) => {
-  // List tools handler
+  const dynamicToolsManager = getDynamicToolsManager();
+
+  // List tools handler - 合并静态工具和动态工具
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    const staticTools = TOOL_SCHEMAS;
+    const dynamicTools = dynamicToolsManager.getCustomToolSchemas();
+    return { tools: [...staticTools, ...dynamicTools] };
+  });
+
+  logger.info('setupTools');
+
   server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOL_SCHEMAS }));
 
-  // Call tool handler
+  // Call tool handler - 路由到相应的工具处理器
   server.setRequestHandler(CallToolRequestSchema, async (request) =>
     handleToolCall(request.params.name, request.params.arguments || {}),
   );
@@ -19,7 +31,14 @@ export const setupTools = (server: Server) => {
 
 const handleToolCall = async (name: string, args: any): Promise<CallToolResult> => {
   try {
-    // 发送请求到Chrome扩展并等待响应
+    // const dynamicToolsManager = getDynamicToolsManager();
+    //
+    // // 检查是否为自定义工具
+    // if (dynamicToolsManager.isCustomTool(name)) {
+    //   return await dynamicToolsManager.executeCustomTool(name, args);
+    // }
+
+    // 发送请求到Chrome扩展并等待响应（处理内置工具）
     const response = await nativeMessagingHostInstance.sendRequestToExtensionAndWait(
       {
         name,

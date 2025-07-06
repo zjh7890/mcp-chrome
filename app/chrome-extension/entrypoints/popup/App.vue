@@ -217,6 +217,12 @@
         @cleanup-cache="cleanupCache"
         @clear-all-cache="clearAllCache"
       />
+
+      <!-- Custom Tools Configuration Section -->
+      <div class="section">
+        <h2 class="section-title">自定义工具配置</h2>
+        <CustomToolsConfig />
+      </div>
     </div>
 
     <div class="footer">
@@ -255,6 +261,7 @@ import { BACKGROUND_MESSAGE_TYPES } from '@/common/message-types';
 import ConfirmDialog from './components/ConfirmDialog.vue';
 import ProgressIndicator from './components/ProgressIndicator.vue';
 import ModelCacheManagement from './components/ModelCacheManagement.vue';
+import CustomToolsConfig from './components/CustomToolsConfig.vue';
 import {
   DocumentIcon,
   DatabaseIcon,
