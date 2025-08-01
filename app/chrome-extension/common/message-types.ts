@@ -21,6 +21,10 @@ export const BACKGROUND_MESSAGE_TYPES = {
   REFRESH_SERVER_STATUS: 'refresh_server_status',
   SERVER_STATUS_CHANGED: 'server_status_changed',
   INITIALIZE_SEMANTIC_ENGINE: 'initialize_semantic_engine',
+  // 自定义工具相关消息类型
+  GET_CUSTOM_TOOLS_CONFIG: 'get_custom_tools_config',
+  SAVE_CUSTOM_TOOLS_CONFIG: 'save_custom_tools_config',
+  EXECUTE_CUSTOM_TOOL: 'execute_custom_tool',
 } as const;
 
 // Offscreen message types

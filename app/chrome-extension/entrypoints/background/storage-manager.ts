@@ -1,4 +1,5 @@
 import { BACKGROUND_MESSAGE_TYPES } from '@/common/message-types';
+import { CustomToolsConfig } from './types/custom-tools';
 
 /**
  * Get storage statistics
@@ -93,6 +94,55 @@ export async function handleClearAllData(): Promise<{ success: boolean; error?: 
 }
 
 /**
+ * 获取自定义工具配置
+ */
+export async function handleGetCustomToolsConfig(): Promise<{
+  success: boolean;
+  config?: CustomToolsConfig;
+  error?: string;
+}> {
+  try {
+    const result = await chrome.storage.local.get(['custom_tools_config']);
+    const config = result.custom_tools_config || { customTools: [] };
+
+    return {
+      success: true,
+      config,
+    };
+  } catch (error: any) {
+    console.error('Background: Failed to get custom tools config:', error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+/**
+ * 保存自定义工具配置
+ */
+export async function handleSaveCustomToolsConfig(config: CustomToolsConfig): Promise<{
+  success: boolean;
+  error?: string;
+}> {
+  try {
+    console.log('Background: 开始保存自定义工具配置:', config);
+    await chrome.storage.local.set({ custom_tools_config: config });
+    console.log('Background: 自定义工具配置保存成功');
+
+    return {
+      success: true,
+    };
+  } catch (error: any) {
+    console.error('Background: 保存自定义工具配置失败:', error);
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+
+/**
  * Initialize storage manager module message listeners
  */
 export const initStorageManagerListener = () => {
@@ -104,6 +154,18 @@ export const initStorageManagerListener = () => {
       return true;
     } else if (message.type === BACKGROUND_MESSAGE_TYPES.CLEAR_ALL_DATA) {
       handleClearAllData()
+        .then((result: { success: boolean; error?: string }) => sendResponse(result))
+        .catch((error: any) => sendResponse({ success: false, error: error.message }));
+      return true;
+    } else if (message.type === BACKGROUND_MESSAGE_TYPES.GET_CUSTOM_TOOLS_CONFIG) {
+      handleGetCustomToolsConfig()
+        .then((result: { success: boolean; config?: CustomToolsConfig; error?: string }) =>
+          sendResponse(result),
+        )
+        .catch((error: any) => sendResponse({ success: false, error: error.message }));
+      return true;
+    } else if (message.type === BACKGROUND_MESSAGE_TYPES.SAVE_CUSTOM_TOOLS_CONFIG) {
+      handleSaveCustomToolsConfig(message.config)
         .then((result: { success: boolean; error?: string }) => sendResponse(result))
         .catch((error: any) => sendResponse({ success: false, error: error.message }));
       return true;

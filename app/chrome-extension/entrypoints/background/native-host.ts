@@ -20,6 +20,7 @@ interface ServerStatus {
   isRunning: boolean;
   port?: number;
   lastUpdated: number;
+  error?: string; // Add error message field
 }
 
 let currentServerStatus: ServerStatus = {
@@ -130,6 +131,7 @@ export function connectNativeHost(port: number = NATIVE_HOST.DEFAULT_PORT) {
           isRunning: true,
           port: port,
           lastUpdated: Date.now(),
+          error: undefined, // Clear any previous error
         };
         await saveServerStatus(currentServerStatus);
         broadcastServerStatusChange(currentServerStatus);
@@ -145,6 +147,28 @@ export function connectNativeHost(port: number = NATIVE_HOST.DEFAULT_PORT) {
         console.log(SUCCESS_MESSAGES.SERVER_STOPPED);
       } else if (message.type === NativeMessageType.ERROR_FROM_NATIVE_HOST) {
         console.error('Error from native host:', message.payload?.message || 'Unknown error');
+
+        // If the error is about server startup/operation failure, update server status
+        const errorMessage = message.payload?.message;
+        if (
+          errorMessage &&
+          (errorMessage.includes('Failed to start server') ||
+            errorMessage.includes('EADDRINUSE') ||
+            errorMessage.includes('address already in use'))
+        ) {
+          currentServerStatus = {
+            isRunning: false,
+            port: currentServerStatus.port,
+            lastUpdated: Date.now(),
+            error: errorMessage, // Save the error message
+          };
+          await saveServerStatus(currentServerStatus);
+          broadcastServerStatusChange(currentServerStatus);
+          console.log(
+            'Background: Server status updated to stopped due to server error:',
+            errorMessage,
+          );
+        }
       }
     });
 

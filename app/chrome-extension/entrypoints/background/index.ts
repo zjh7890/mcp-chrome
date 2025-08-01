@@ -4,6 +4,7 @@ import {
   initializeSemanticEngineIfCached,
 } from './semantic-similarity';
 import { initStorageManagerListener } from './storage-manager';
+import { initRequestInterceptorListener } from './request-interceptor';
 import { cleanupModelCache } from '@/utils/semantic-similarity-engine';
 
 /**
@@ -15,6 +16,7 @@ export default defineBackground(() => {
   initNativeHostListener();
   initSemanticSimilarityListener();
   initStorageManagerListener();
+  initRequestInterceptorListener();
 
   // Conditionally initialize semantic similarity engine if model cache exists
   initializeSemanticEngineIfCached()
