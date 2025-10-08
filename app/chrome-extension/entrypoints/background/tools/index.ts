@@ -1,9 +1,22 @@
-import { createErrorResponse } from '@/common/tool-handler';
+import { createErrorResponse, ToolExecutor } from '@/common/tool-handler';
 import { ERROR_MESSAGES } from '@/common/constants';
 import * as browserTools from './browser';
+import {
+  CustomToolExecutor,
+  handleGetCustomToolsConfig,
+  handleSaveCustomToolsConfig,
+} from './custom-tools';
 
 const tools = { ...browserTools };
-const toolsMap = new Map(Object.values(tools).map((tool) => [tool.name, tool]));
+const customToolExecutor = new CustomToolExecutor();
+
+// 创建工具映射
+const toolsMap = new Map<string, ToolExecutor>([
+  ...Object.values(tools).map((tool): [string, ToolExecutor] => [tool.name, tool]),
+  ['get_custom_tools_config', { execute: () => handleGetCustomToolsConfig() }],
+  ['save_custom_tools_config', { execute: (args: any) => handleSaveCustomToolsConfig(args) }],
+  ['execute_custom_tool', customToolExecutor],
+]);
 
 /**
  * Tool call parameter interface

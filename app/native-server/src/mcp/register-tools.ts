@@ -6,12 +6,24 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import nativeMessagingHostInstance from '../native-messaging-host';
 import { NativeMessageType, TOOL_SCHEMAS } from 'chrome-mcp-shared';
+import { getDynamicToolsManager } from './dynamic-tools';
 
 export const setupTools = (server: Server) => {
-  // List tools handler
-  server.setRequestHandler(ListToolsRequestSchema, async () => ({ tools: TOOL_SCHEMAS }));
+  const dynamicToolsManager = getDynamicToolsManager();
 
-  // Call tool handler
+  // List tools handler - 合并静态工具和动态工具
+  server.setRequestHandler(ListToolsRequestSchema, async () => {
+    const staticTools = TOOL_SCHEMAS;
+    const dynamicTools = await dynamicToolsManager.getCustomToolSchemas();
+    // 读取需要排除的静态工具名称
+    const excluded = await dynamicToolsManager.getExcludedStaticToolNames();
+    const filteredStatic = Array.isArray(excluded)
+      ? staticTools.filter((t) => !excluded.includes(t.name))
+      : staticTools;
+    return { tools: [...filteredStatic, ...dynamicTools] };
+  });
+
+  // Call tool handler - 路由到相应的工具处理器
   server.setRequestHandler(CallToolRequestSchema, async (request) =>
     handleToolCall(request.params.name, request.params.arguments || {}),
   );

@@ -24,6 +24,10 @@
               <span :class="['status-dot', getStatusClass()]"></span>
               <span class="status-text">{{ getStatusText() }}</span>
             </div>
+            <div v-if="serverStatus.error" class="server-error-message">
+              <span class="error-icon">⚠️</span>
+              <span class="error-text">{{ serverStatus.error }}</span>
+            </div>
             <div v-if="serverStatus.lastUpdated" class="status-timestamp">
               {{ getMessage('lastUpdatedLabel') }}
               {{ new Date(serverStatus.lastUpdated).toLocaleTimeString() }}
@@ -229,6 +233,12 @@
         @cleanup-cache="cleanupCache"
         @clear-all-cache="clearAllCache"
       />
+
+      <!-- Custom Tools Configuration Section -->
+      <div class="section">
+        <h2 class="section-title">自定义工具配置</h2>
+        <CustomToolsConfig />
+      </div>
     </div>
 
     <div class="footer">
@@ -272,6 +282,7 @@ import { getMessage } from '@/utils/i18n';
 import ConfirmDialog from './components/ConfirmDialog.vue';
 import ProgressIndicator from './components/ProgressIndicator.vue';
 import ModelCacheManagement from './components/ModelCacheManagement.vue';
+import CustomToolsConfig from './components/CustomToolsConfig.vue';
 import {
   DocumentIcon,
   DatabaseIcon,
@@ -290,6 +301,7 @@ const serverStatus = ref<{
   isRunning: boolean;
   port?: number;
   lastUpdated: number;
+  error?: string;
 }>({
   isRunning: false,
   lastUpdated: Date.now(),
@@ -373,7 +385,8 @@ const getStatusClass = () => {
     if (serverStatus.value.isRunning) {
       return 'bg-emerald-500';
     } else {
-      return 'bg-yellow-500';
+      // Show red if there's an error, yellow if just not running
+      return serverStatus.value.error ? 'bg-red-500' : 'bg-yellow-500';
     }
   } else if (nativeConnectionStatus.value === 'disconnected') {
     return 'bg-red-500';
@@ -387,7 +400,12 @@ const getStatusText = () => {
     if (serverStatus.value.isRunning) {
       return getMessage('serviceRunningStatus', [(serverStatus.value.port || 'Unknown').toString()]);
     } else {
-      return getMessage('connectedServiceNotStartedStatus');
+      if (serverStatus.value.error) {
+        // 保持 i18n 体系，若未来新增专用文案可替换
+        return getMessage('semanticEngineInitFailedStatus');
+      } else {
+        return getMessage('connectedServiceNotStartedStatus');
+      }
     }
   } else if (nativeConnectionStatus.value === 'disconnected') {
     return getMessage('serviceNotConnectedStatus');
@@ -1641,6 +1659,30 @@ onUnmounted(() => {
   font-size: 12px;
   color: #9ca3af;
   margin-top: 4px;
+}
+
+.server-error-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin: 8px 0;
+}
+
+.error-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.error-text {
+  font-size: 13px;
+  color: #991b1b;
+  line-height: 1.4;
+  word-break: break-word;
 }
 
 .mcp-config-section {

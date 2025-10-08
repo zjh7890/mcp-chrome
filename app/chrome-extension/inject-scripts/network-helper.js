@@ -105,7 +105,10 @@ if (window.__NETWORK_CAPTURE_HELPER_INITIALIZED__) {
   // Listen for messages from the extension
   chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
     // Respond to ping message
-    if (request.action === 'chrome_network_request_ping') {
+    if (
+      request.action === 'chrome_network_request_ping' ||
+      request.action === 'custom_tool_executor_ping'
+    ) {
       sendResponse({ status: 'pong' });
       return false; // Synchronous response
     } else if (request.action === 'sendPureNetworkRequest') {
