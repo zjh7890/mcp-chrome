@@ -1,0 +1,1432 @@
+{
+  "excludeStaticTools": [
+    "get_windows_and_tabs",
+    "search_tabs_content",
+    "chrome_navigate",
+    "chrome_screenshot",
+    "chrome_close_tabs",
+    "chrome_go_back_or_forward",
+    "chrome_get_web_content",
+    "chrome_click_element",
+    "chrome_fill_or_select",
+    "chrome_get_interactive_elements",
+    "chrome_network_capture_start",
+    "chrome_network_capture_stop",
+    "chrome_network_request",
+    "chrome_network_debugger_start",
+    "chrome_network_debugger_stop",
+    "chrome_keyboard",
+    "chrome_history",
+    "chrome_bookmark_search",
+    "chrome_bookmark_add",
+    "chrome_bookmark_delete",
+    "chrome_inject_script",
+    "chrome_send_command_to_inject_script",
+    "chrome_console"
+  ],
+  "webRequestListeners": [
+    {
+      "id": "company_cloud_listener",
+      "enabled": true,
+      "urlPattern": "*://cloud.company.com/*",
+      "field": "request.header:authorization",
+      "storageKey": "company_cloud_auth_token"
+    },
+    {
+      "id": "company_db_listener",
+      "enabled": true,
+      "urlPattern": "*://db.company.com/*",
+      "field": "request.header:authorization",
+      "storageKey": "company_db_auth_token"
+    },
+    {
+      "id": "aliyun_sls_listener",
+      "enabled": true,
+      "urlPattern": "*://sls4service.console.aliyun.com/*",
+      "field": "request.header:x-csrf-token",
+      "storageKey": "aliyun_sls_csrf_token"
+    },
+    {
+      "id": "company_innerapi_listener",
+      "enabled": true,
+      "urlPattern": "*://test-innerapi.company.com/*",
+      "field": "request.header:authorization",
+      "storageKey": "company_innerapi_auth_token"
+    },
+    {
+      "id": "pangu_call_api_device_id_listener",
+      "enabled": true,
+      "urlPattern": "*://test-h5.hicompany.com/*",
+      "field": "request.body:deviceId",
+      "storageKey": "pangu_call_api_device_id"
+    }
+  ],
+  "customTools": [
+    {
+      "name": "get_release_plans",
+      "description": "获取发布计划列表",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "page": { "type": "integer", "description": "页码 (默认值: 1)", "default": 1 },
+          "pageSize": { "type": "integer", "description": "每页大小 (默认值: 10)", "default": 10 },
+          "current": { "type": "integer", "description": "当前页 (默认值: 1)", "default": 1 }
+        }
+      },
+      "script": [
+        "(",
+        "  $base := 'https://cloud.company.com/api/cloud-app-service/task/list';",
+        "  $qs := '?page=' & $string($ARGS.page) & '&pageSize=' & $string($ARGS.pageSize) & '&current=' & $string($ARGS.current) & '&relation=my&status=doing';",
+        "  $resp := $fetch($base & $qs, { 'method': 'GET', 'headers': { 'authorization': $LISTENER_DATA.company_cloud_auth_token } });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_service_list_by_release_id",
+      "description": "根据 get_release_plans 返回的 releaseId 获取指定发布计划的发布服务列表",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "releaseId": { "type": "integer", "description": "发布计划id" }
+        },
+        "required": ["releaseId"]
+      },
+      "script": [
+        "(",
+        "  $u := 'https://cloud.company.com/api/cloud-app-service/task/release/list?taskId=' & $string($ARGS.releaseId);",
+        "  $resp := $fetch($u, { 'method': 'GET', 'headers': { 'authorization': $LISTENER_DATA.company_cloud_auth_token } });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "create_pipeline",
+      "description": "创建发布流水线",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "releaseId": { "type": "integer", "description": "发布计划发布服务 id" }
+        },
+        "required": ["releaseId"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://cloud.company.com/api/cloud-app-service/release/createPipeline';",
+        "  $headers := { 'accept': '*/*', 'authorization': $LISTENER_DATA.company_cloud_auth_token, 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'releaseId': $ARGS.releaseId, 'autoCd': true, 'env': 'test', 'region': 'hangzhou' });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "search_apollo_apps",
+      "description": "根据配置项 key 或服务名搜索 Apollo 服务",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "搜索关键字 (配置项key如'dragon.act.view.id'或服务名，不能是 namespace 名称)"
+          },
+          "page": { "type": "integer", "description": "页码 (默认值: 0)", "default": 0 },
+          "size": { "type": "integer", "description": "每页大小 (默认值: 20)", "default": 20 }
+        },
+        "required": ["query"]
+      },
+      "script": [
+        "(",
+        "  $u := 'https://k8s-apollo.company.com/apps/search/by-appid-or-name?query=' & $ARGS.query & '&page=' & $string($ARGS.page) & '&size=' & $string($ARGS.size);",
+        "  $resp := $fetch($u, { 'method': 'GET' });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_apollo_env_and_cluster",
+      "description": "获取 Apollo 服务的环境和集群信息，如果返回的结果是 html 内容而不是 json 格式，说明登录态失效了，让用户重新登录下再进行或许操作",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "appId": { "type": "string", "description": "服务ID，精确查询，不是模糊查询" }
+        },
+        "required": ["appId"]
+      },
+      "script": [
+        "(",
+        "  $u := 'https://k8s-apollo.company.com/apps/' & $ARGS.appId & '/navtree';",
+        "  $resp := $fetch($u, { 'method': 'GET' });",
+        "  $d := $body($resp, 'json');",
+        "  $parsed1 := $parseJsonString($d);",
+        "  ($parsed1 = 'INVALID_JSON_STRING') ? (",
+        "    $resp2 := $fetch($u, { 'method': 'GET' });",
+        "    $d2 := $body($resp2, 'json');",
+        "    $parsed2 := $parseJsonString($d2);",
+        "    ($parsed2 = 'INVALID_JSON_STRING') ? 'LOGIN_REQUIRED' : $parsed2",
+        "  ) : $parsed1",
+        ")"
+      ]
+    },
+    {
+      "name": "get_apollo_namespaces_by_app_id",
+      "description": "获取 app 下的 namespace 列表",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "appId": { "type": "string", "description": "服务ID" },
+          "env": { "type": "string", "description": "环境 (TEST/PRO等", "default": "TEST" },
+          "cluster": { "type": "string", "description": "集群名称", "default": "default" }
+        },
+        "required": ["appId"]
+      },
+      "script": [
+        "(",
+        "  $u := 'https://k8s-apollo.company.com/apps/' & $ARGS.appId & '/envs/' & $ARGS.env & '/clusters/' & $ARGS.cluster & '/namespaces?namespaceKey=';",
+        "  $resp := $fetch($u, { 'method': 'GET' });",
+        "  $d := $body($resp, 'json');",
+        "  (",
+        "    $omit := function($obj, $names){ $reduce($keys($obj)[$not($ in $names)], function($acc,$k){ $merge([$acc, {($k): $lookup($obj, $k)}]) }, {}) };",
+        "    $map($d, function($v){ $omit($v, ['items']) })",
+        "  )",
+        ")"
+      ]
+    },
+    {
+      "name": "get_apollo_namespace_config_items",
+      "description": "获取 Apollo namespace 配置项列表",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "appId": { "type": "string", "description": "服务ID" },
+          "env": {
+            "type": "string",
+            "description": "环境 (TEST/PRO等，默认值: TEST)",
+            "default": "TEST"
+          },
+          "cluster": {
+            "type": "string",
+            "description": "集群名称 (默认值: default)",
+            "default": "default"
+          },
+          "namespace": { "type": "string", "description": "namespace名称" }
+        },
+        "required": ["appId", "namespace"]
+      },
+      "script": [
+        "(",
+        "  $u := 'https://k8s-apollo.company.com/apps/' & $ARGS.appId & '/envs/' & $ARGS.env & '/clusters/' & $ARGS.cluster & '/namespaces/' & $ARGS.namespace;",
+        "  $resp := $fetch($u, { 'method': 'GET' });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_apollo_associated_namespace_config",
+      "description": "查询关联 namespace 下的配置",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "appId": { "type": "string", "description": "服务ID" },
+          "env": {
+            "type": "string",
+            "description": "环境 (TEST/PRO等，默认值: TEST)",
+            "default": "TEST"
+          },
+          "cluster": {
+            "type": "string",
+            "description": "集群名称 (默认值: default)",
+            "default": "default"
+          },
+          "namespace": { "type": "string", "description": "关联的namespace名称" }
+        },
+        "required": ["appId", "namespace"]
+      },
+      "script": [
+        "(",
+        "  $u := 'https://k8s-apollo.company.com/envs/' & $ARGS.env & '/apps/' & $ARGS.appId & '/clusters/' & $ARGS.cluster & '/namespaces/' & $ARGS.namespace & '/associated-public-namespace';",
+        "  $resp := $fetch($u, { 'method': 'GET' });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_access_token_by_mobile",
+      "description": "根据手机号获取登录态 accessToken（返回的accessToken可用于后续API调用）",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "mobile": { "type": "string", "description": "手机号码" },
+          "appId": { "type": "integer", "description": "应用ID", "default": 10 },
+          "nationCode": {
+            "type": "string",
+            "description": "国家代码 (默认值: 86)",
+            "default": "86"
+          },
+          "verifyCode": {
+            "type": "string",
+            "description": "验证码 (默认值: 6666)",
+            "default": "6666"
+          }
+        },
+        "required": ["mobile"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-h5.hicompany.com/passport/verification-code';",
+        "  $headers := { 'accept': 'application/json, text/plain, */*', 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'mobile': $ARGS.mobile, 'appId': $ARGS.appId, 'deviceId': $LISTENER_DATA.pangu_call_api_device_id, 'nationCode': $ARGS.nationCode, 'verifyCode': $ARGS.verifyCode });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "call_user_client_api",
+      "description": "调用 **C端** API（自动通过手机号获取 accessToken 并完成请求）",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apiPath": {
+            "type": "string",
+            "description": "API路径 (如: user-auth/validate，不要 / 前缀)"
+          },
+          "mobile": { "type": "string", "description": "手机号码", "default": "12222222224" },
+          "appId": { "type": "integer", "description": "应用ID", "default": 10 },
+          "requestBody": { "type": "object", "description": "请求体内容", "default": {} }
+        },
+        "required": ["apiPath", "mobile"]
+      },
+      "script": [
+        "(",
+        "  $mobile := $ARGS.mobile;",
+        "  $apiPath := $ARGS.apiPath;",
+        "  $appId := $exists($ARGS.appId) ? $ARGS.appId : 10;",
+        "  $requestBody := $exists($ARGS.requestBody) ? $ARGS.requestBody : {};",
+        "  $tokRes := $callTool('get_access_token_by_mobile', { 'mobile': $mobile, 'appId': $appId });",
+        "  $accessToken := $exists($tokRes.result.accessToken) ? $tokRes.result.accessToken : ( $exists($tokRes.result.token) ? $tokRes.result.token : ( $exists($tokRes.accessToken) ? $tokRes.accessToken : ( $exists($tokRes.token) ? $tokRes.token : ( $exists($tokRes.result.access_token) ? $tokRes.result.access_token : null))));",
+        "  $res := $callTool('call_user_client_api_internal', { 'apiPath': $apiPath, 'accessToken': $accessToken, 'mobile': $mobile, 'requestBody': $requestBody });",
+        "  $res",
+        ")"
+      ]
+    },
+    {
+      "name": "call_op_api",
+      "description": "调用后台接口，支持任意 API 路径和请求体",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apiPath": {
+            "type": "string",
+            "description": "API 路径（如：/live/op/user/library/page）"
+          },
+          "requestBody": { "type": "object", "description": "请求体内容", "default": {} }
+        },
+        "required": ["apiPath"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-innerapi.company.com' & $ARGS.apiPath;",
+        "  $headers := { 'accept': 'application/json, text/plain, */*', 'authorization': $LISTENER_DATA.company_innerapi_auth_token, 'content-type': 'application/json', 'x-system-name': 'operation_media_live' };",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $jsonStringify($ARGS.requestBody) });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "query_test_mysql_or_redis_config",
+      "description": "查询 TEST 环境 MySQL 或 Redis 的 Apollo namespace 配置项（仅返回 items 的 key/value）",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "查询  mysql 配置传入 `middleware-database-v2`, redis 传入 `middleware-redis-v2`"
+          },
+          "namespace": {
+            "type": "string",
+            "description": "namespace 名称，如：middleware.db-v2.xxx"
+          }
+        },
+        "required": ["type", "namespace"]
+      },
+      "script": [
+        "(",
+        "  $u := 'https://k8s-apollo.company.com/apps/' & $ARGS.type & '/envs/TEST/clusters/default/namespaces/' & $ARGS.namespace;",
+        "  $resp := $fetch($u, { 'method': 'GET' });",
+        "  $d := $body($resp, 'json');",
+        "  $map($d.items, function($v){ { 'key': $v.item.key, 'value': $v.item.value } })",
+        ")"
+      ]
+    },
+    {
+      "name": "get_db_table_info",
+      "description": "根据表明精确查询数据库表的列表",
+      "valid": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "table_name": { "type": "string", "description": "必须是精确的表名" },
+          "env": {
+            "type": "string",
+            "description": "环境参数（传入\"%E6%B5%8B%E8%AF%95%E7%8E%AF%E5%A2%83\" 表示测试环境，\"%E7%94%9F%E4%BA%A7%E7%8E%AF%E5%A2%83\" 表示生产环境）"
+          }
+        },
+        "required": ["table_name", "env"]
+      },
+      "script": [
+        "(",
+        "  $u := 'https://db.company.com/backend/api/v1/get_dic_all/?user=zjh7890&pagesize=5000&page=1&mybox=表&search_context=' & $ARGS.table_name & '&dbtype=&env=' & $ARGS.env;",
+        "  $resp := $fetch($u, { 'method': 'GET', 'headers': { 'accept': 'application/json, text/plain, */*', 'authorization': $LISTENER_DATA.company_db_auth_token } });",
+        "  $d := $body($resp, 'json');",
+        "  (",
+        "    $filtered := $filter($d.data, function($v){ $string($v.table_name) = $string($ARGS.table_name) });",
+        "    $count($filtered) > 0 ? $filtered : []",
+        "  )",
+        ")"
+      ]
+    },
+    {
+      "name": "execute_sql_query",
+      "description": "执行SQL查询，**不支持 describe 命令，支持 SHOW CREATE TABLE，不支持 DDL，DML，只支持查询**",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "sql": { "type": "string", "description": "SQL查询语句" },
+          "connection_name": {
+            "type": "string",
+            "description": "实例名，从 get_db_table_info 返回的 instance_name 获取"
+          },
+          "address": {
+            "type": "string",
+            "description": "地址信息 (JSON格式字符串，如 '{\"basename\":\"company_draw\"}')"
+          },
+          "pagename": {
+            "type": "string",
+            "description": "页面名称 (默认值: selectexe)",
+            "default": "selectexe"
+          },
+          "randomkey": {
+            "type": "string",
+            "description": "随机密钥 (16位随机字符串，默认值: 4Xj5Fk7GMddCRQm4)",
+            "default": "4Xj5Fk7GMddCRQm4"
+          }
+        },
+        "required": ["sql", "connection_name", "address"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://db.company.com/backend/api/v1/sqlquery/query/';",
+        "  $headers := { 'accept': 'application/json, text/plain, */*', 'authorization': $LISTENER_DATA.company_db_auth_token, 'content-type': 'application/json;charset=UTF-8' };",
+        "  $bodyStr := $jsonStringify({ 'sql': $ARGS.sql, 'connection_name': $ARGS.connection_name, 'address': $ARGS.address, 'user': 'zjh7890', 'pagename': $ARGS.pagename, 'randomkey': $ARGS.randomkey, 'queryfaster': false, 'oktokudu_sid': '' });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "call_user_client_api_internal",
+      "description": "调用 **C端** API（内部工具：需要 accessToken）",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "apiPath": {
+            "type": "string",
+            "description": "API路径 (如: user-auth/validate，不要 / 前缀)"
+          },
+          "accessToken": { "type": "string", "description": "访问令牌" },
+          "mobile": { "type": "string", "description": "手机号码(默认值：12222222224）" },
+          "requestBody": { "type": "object", "description": "请求体内容", "default": {} }
+        },
+        "required": ["apiPath", "accessToken", "mobile"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-gateway.company.com/' & $ARGS.apiPath;",
+        "  $headers := { 'accept': 'application/json, text/plain, */*', 'content-type': 'application/json', 'mobile': $ARGS.mobile, 'x-accesstoken': $ARGS.accessToken, 'x-encrypt': 'false', 'x-skip-verify': 'true', 'x-user-agent': 'mapi/1.0 (Android 29;node.company.h5 6.4.0;HONOR BKL-AL20;bx-gw)' };",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $jsonStringify($ARGS.requestBody) });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "create_pr",
+      "description": "创建 PR (Pull Request)",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "PR 名称" },
+          "app": { "type": "string", "description": "应用名称" },
+          "source_branch": { "type": "string", "description": "源分支" },
+          "target_branch": {
+            "type": "string",
+            "description": "目标分支 (默认值: master)",
+            "default": "master"
+          }
+        },
+        "required": ["name", "app", "source_branch"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://cloud.company.com/api/cloud-cr/ext/cr/create';",
+        "  $headers := { 'accept': 'application/json, text/plain, */*', 'authorization': $LISTENER_DATA.company_cloud_auth_token, 'content-type': 'application/json;charset=UTF-8', 'login-name': 'zjh7890' };",
+        "  $bodyStr := $jsonStringify({ 'name': $ARGS.name, 'app': $ARGS.app, 'source_branch': $ARGS.source_branch, 'target_branch': $ARGS.target_branch, 'strategy': 2, 'votes': 2 });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_pr_list",
+      "description": "查询服务 PR 列表",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "app": { "type": "string", "description": "应用名称" },
+          "page_size": { "type": "integer", "description": "每页大小 (默认值: 10)", "default": 10 },
+          "page": { "type": "integer", "description": "页码 (默认值: 1)", "default": 1 }
+        },
+        "required": ["app"]
+      },
+      "script": [
+        "(",
+        "  $u := 'https://cloud.company.com/api/cloud-cr/ext/cr/list?search=&state=0&page_size=' & $string($ARGS.page_size) & '&page=' & $string($ARGS.page) & '&app=' & $ARGS.app;",
+        "  $resp := $fetch($u, { 'method': 'GET', 'headers': { 'authorization': $LISTENER_DATA.company_cloud_auth_token, 'login-name': 'zjh7890' } });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_cr_detail",
+      "description": "需要先调用 get_pr_list 获取 cr id, 根据 CR ID 查询详情，通过返回的 git_url 字段（形如：git@git.company.com:company/live/live-link-service.git) 和 mr_iid 字段（形如: 567) 组成形如 https://git.company.com/company/live/live-link-service/merge_requests/567/diffs 的 PR 查看地址",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "cr_id": { "type": "integer", "description": "CR ID" }
+        },
+        "required": ["cr_id"]
+      },
+      "script": [
+        "(",
+        "  $u := 'https://cloud.company.com/api/cloud-cr/ext/cr/detail?cr_id=' & $string($ARGS.cr_id);",
+        "  $resp := $fetch($u, { 'method': 'GET', 'headers': { 'authorization': $LISTENER_DATA.company_cloud_auth_token, 'login-name': 'zjh7890' } });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_activity_prize_config_list",
+      "description": "根据活动 id 获取活动后台奖励模块配置",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": { "type": "integer", "description": "活动ID" }
+        },
+        "required": ["activityId"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-act-admin.company.com/api/kael/prizeAdminService/prizeConfigList';",
+        "  $headers := { 'accept': '*/*', 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'activityId': $ARGS.activityId, 'valid': true, 'pageSize': 200 });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "create_prize_config",
+      "description": "创建奖励配置（奖励壳子）",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": { "type": "integer", "description": "活动ID" },
+          "subject": { "type": "string", "description": "奖励标题" }
+        },
+        "required": ["activityId", "subject"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-act-admin.company.com/api/kael/prizeAdminService/addOrUpdatePrizeConfig';",
+        "  $headers := { 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'subject': $ARGS.subject, 'totalLimit': -1, 'personalTotalLimit': -1, 'personalDailyLimit': -1, 'activityId': $ARGS.activityId, 'prizeType': 1 });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "update_prize_config",
+      "description": "更新奖励配置的关联实际奖励内容ID, 先调用 create_goods_fragment 获取一个 referId，然后更新此奖励的实际",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "prizeId": { "type": "integer", "description": "奖励配置ID" },
+          "referId": { "type": "integer", "description": "新的关联实际奖励物品ID" },
+          "subject": { "type": "string", "description": "奖励标题" }
+        },
+        "required": ["prizeId", "referId"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-act-admin.company.com/api/kael/prizeAdminService/addOrUpdatePrizeConfig';",
+        "  $headers := { 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'id': $ARGS.prizeId, 'referId': $ARGS.referId, 'subject': $ARGS.subject });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "create_goods_fragment",
+      "description": "创建实际奖励内容, 返回 referId",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": { "type": "integer", "description": "活动ID" },
+          "goodsId": { "type": "string", "description": "物品ID" },
+          "name": { "type": "string", "description": "奖励名称" },
+          "goodsQuantity": { "type": "integer", "description": "物品数量" },
+          "goodsType": {
+            "type": "string",
+            "description": "物品类型，可参考枚举 com.company.activity.kael.api.module.goods.enums.GoodsTypeEnum"
+          },
+          "extConfig": { "type": "string", "description": "扩展配置 (默认值: {})", "default": "{}" }
+        },
+        "required": ["activityId", "goodsId", "name", "goodsQuantity", "goodsType"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-act-admin.company.com/api/kael/goodsAdminService/addOrUpdateGoodsFragment';",
+        "  $headers := { 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'goodsId': $ARGS.goodsId, 'name': $ARGS.name, 'goodsQuantity': $ARGS.goodsQuantity, 'valid': true, 'extConfig': $ARGS.extConfig, 'goodsType': $ARGS.goodsType, 'activityId': $ARGS.activityId });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_goods_fragment_list",
+      "description": "根据物品类型获取实际奖励列表, 除了活动礼包类型，活动礼包一般不复用，需要新建礼包壳子",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "goodsType": {
+            "type": "string",
+            "description": "物品类型，可参考枚举 com.company.activity.kael.api.module.goods.enums.GoodsTypeEnum，可用 mcp_tools_java_sourceget_by_class_name 进行读取"
+          },
+          "pageSize": { "type": "integer", "description": "每页大小 (默认值: 20)", "default": 20 },
+          "pageNo": { "type": "integer", "description": "页码 (默认值: 1)", "default": 1 }
+        },
+        "required": ["goodsType"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-act-admin.company.com/api/kael/goodsAdminService/goodsFragmentList';",
+        "  $headers := { 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'goodsType': $ARGS.goodsType, 'pageSize': $ARGS.pageSize, 'pageNo': $ARGS.pageNo });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "create_activity_pkg",
+      "description": "创建活动礼包",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "礼包名称" },
+          "mode": {
+            "type": "integer",
+            "description": "礼包模式(默认值: 1), 1: 组合发放，都发, 2: 随机，随机发放一个",
+            "default": 1
+          }
+        },
+        "required": ["name"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-act-admin.company.com/api/kael/goodsAdminService/addOrUpdateGoodsPkg';",
+        "  $headers := { 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'name': $ARGS.name, 'mode': $ARGS.mode });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "add_goods_to_activity_pkg",
+      "description": "增加物品到活动礼包",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pkgId": { "type": "integer", "description": "礼包ID" },
+          "name": { "type": "string", "description": "物品名称" },
+          "goodsId": { "type": "integer", "description": "物品ID" },
+          "goodsQuantity": {
+            "type": "integer",
+            "description": "物品数量 (默认值: 1)",
+            "default": 1
+          },
+          "goodsType": { "type": "string", "description": "物品类型" },
+          "extConfig": { "type": "string", "description": "扩展配置 (默认值: {})", "default": "{}" }
+        },
+        "required": ["pkgId", "goodsType", "goodsQuantity", "name", "goodsId"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-act-admin.company.com/api/kael/goodsAdminService/addOrUpdateGoodsFragment';",
+        "  $headers := { 'accept': '*/*', 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'name': $ARGS.name, 'goodsQuantity': $ARGS.goodsQuantity, 'extConfig': $ARGS.extConfig, 'goodsId': $ARGS.goodsId, 'goodsType': $ARGS.goodsType, 'pkgId': $ARGS.pkgId, 'valid': true });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_code_review_configs",
+      "description": "获取 code review 配置列表",
+      "valid": false,
+      "inputSchema": { "type": "object", "properties": {} },
+      "script": [
+        "(",
+        "  $u := 'https://aigc.company.com/codereview/v1/dingtalk-configs';",
+        "  $resp := $fetch($u, { 'method': 'GET', 'headers': { 'authorization': $LISTENER_DATA.company_cloud_auth_token } });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "create_code_review_config",
+      "description": "创建 code review 配置",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "project_name": { "type": "string", "description": "项目名称" },
+          "token": { "type": "string", "description": "GitLab webhook token" }
+        },
+        "required": ["project_name", "token"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://aigc.company.com/codereview/v1/dingtalk-configs';",
+        "  $headers := { 'accept': 'application/json, text/plain, */*', 'authorization': $tokens.company_cloud_auth_token, 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'project_name': $ARGS.project_name, 'branch': 'master', 'event_type': 'merge_request', 'token': $ARGS.token });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "update_code_review_config",
+      "description": "更新 code review 配置",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "config_id": { "type": "integer", "description": "配置ID" },
+          "project_name": { "type": "string", "description": "项目名称" },
+          "branch": {
+            "type": "string",
+            "description": "分支名称 (默认值: master)",
+            "default": "master"
+          },
+          "event_type": {
+            "type": "string",
+            "description": "事件类型 (默认值: merge_request)",
+            "default": "merge_request"
+          },
+          "token": { "type": "string", "description": "DingTalk webhook token" }
+        },
+        "required": ["config_id", "project_name", "token"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://aigc.company.com/codereview/v1/dingtalk-configs/' & $string($ARGS.config_id);",
+        "  $headers := { 'accept': 'application/json, text/plain, */*', 'authorization': $tokens.company_cloud_auth_token, 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'project_name': $ARGS.project_name, 'branch': $ARGS.branch, 'event_type': $ARGS.event_type, 'token': $ARGS.token });",
+        "  $resp := $fetch($url, { 'method': 'PUT', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_activity_list_by_id",
+      "description": "根据活动ID获取指定活动信息",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": { "type": "integer", "description": "活动ID，用于过滤指定的活动" }
+        },
+        "required": ["activityId"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-act-admin.company.com/api/kael/activityAdminService/activityList';",
+        "  $headers := { 'accept': '*/*', 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'valid': true, 'pageNo': 1, 'pageSize': 1000 });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $d := $body($resp, 'json');",
+        "  (",
+        "    $omit := function($obj, $names){ $reduce($keys($obj)[$not($ in $names)], function($acc,$k){ $merge([$acc, {($k): $lookup($obj, $k)}]) }, {}) };",
+        "    $filtered := $filter($d.result.list, function($v){ $number($v.id) = $number($ARGS.activityId) });",
+        "    $newResult := $merge([$omit($d.result, ['count']), { 'list': $filtered }]);",
+        "    $merge([$d, { 'result': $newResult }])",
+        "  )",
+        ")"
+      ]
+    },
+    {
+      "name": "get_lottery_config_list",
+      "description": "获取抽奖场景列表",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": { "type": "integer", "description": "活动ID" },
+          "valid": { "type": "boolean", "description": "是否有效 (默认值: true)", "default": true },
+          "pageSize": { "type": "integer", "description": "每页大小 (默认值: 200)", "default": 200 }
+        },
+        "required": ["activityId"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-act-admin.company.com/api/kael/lotteryAdminService/lotteryConfigList';",
+        "  $headers := { 'accept': '*/*', 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'activityId': $ARGS.activityId, 'valid': $ARGS.valid, 'pageSize': $ARGS.pageSize });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_lottery_pool_list",
+      "description": "获取抽奖奖池列表",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "configId": { "type": "integer", "description": "抽奖配置ID" },
+          "paged": {
+            "type": "boolean",
+            "description": "是否分页 (默认值: false)",
+            "default": false
+          }
+        },
+        "required": ["configId"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-act-admin.company.com/api/kael/lotteryAdminService/lotteryPoolList';",
+        "  $headers := { 'accept': '*/*', 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'configId': $ARGS.configId, 'paged': $ARGS.paged });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_lottery_prize_list",
+      "description": "获取抽奖奖池物品列表",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "poolId": { "type": "integer", "description": "奖池ID" },
+          "pageSize": { "type": "integer", "description": "每页大小 (默认值: 50)", "default": 50 }
+        },
+        "required": ["poolId"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-act-admin.company.com/api/kael/lotteryAdminService/lotteryPrizeList';",
+        "  $headers := { 'accept': '*/*', 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'poolId': $ARGS.poolId, 'pageSize': $ARGS.pageSize });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_exchange_shelf_list",
+      "description": "获取兑换场景列表",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": { "type": "integer", "description": "活动ID" },
+          "valid": { "type": "boolean", "description": "是否有效 (默认值: true)", "default": true },
+          "pageSize": { "type": "integer", "description": "每页大小 (默认值: 200)", "default": 200 }
+        },
+        "required": ["activityId"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-act-admin.company.com/api/kael/exchangeAdminService/exchangeShelfList';",
+        "  $headers := { 'accept': '*/*', 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'activityId': $ARGS.activityId, 'valid': $ARGS.valid, 'pageSize': $ARGS.pageSize });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_exchange_item_list",
+      "description": "获取兑换物品列表",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "shelfId": { "type": "integer", "description": "货架ID" },
+          "paged": {
+            "type": "boolean",
+            "description": "是否分页 (默认值: false)",
+            "default": false
+          }
+        },
+        "required": ["shelfId"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-act-admin.company.com/api/kael/exchangeAdminService/exchangeItemList';",
+        "  $headers := { 'accept': '*/*', 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'paged': $ARGS.paged, 'shelfId': $ARGS.shelfId });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_task_scene_list",
+      "description": "获取任务场景列表",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pageSize": { "type": "integer", "description": "每页大小 (默认值: 20)", "default": 20 },
+          "pageNo": { "type": "integer", "description": "页码 (默认值: 1)", "default": 1 }
+        }
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-act-admin.company.com/api/task/taskSceneService/getSceneList';",
+        "  $headers := { 'accept': '*/*', 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'pageSize': $ARGS.pageSize, 'pageNo': $ARGS.pageNo });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_task_config_detail",
+      "description": "获取任务详情",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "任务配置ID" }
+        },
+        "required": ["id"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-act-admin.company.com/api/task/taskConfigService/selTaskConfig';",
+        "  $headers := { 'accept': '*/*', 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'id': $ARGS.id });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_task_user_event_list",
+      "description": "获取任务事件列表",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "pageNo": { "type": "integer", "description": "页码 (默认值: 1)", "default": 1 },
+          "pageSize": {
+            "type": "integer",
+            "description": "每页大小 (默认值: 1000)",
+            "default": 1000
+          }
+        }
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-act-admin.company.com/api/task/userEventService/pageQueryUserEvent';",
+        "  $headers := { 'accept': '*/*', 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'pageNo': $ARGS.pageNo, 'pageSize': $ARGS.pageSize });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_task_user_action_list",
+      "description": "获取事件下的任务行为列表",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "eventId": { "type": "integer", "description": "事件ID" },
+          "pageNo": { "type": "integer", "description": "页码 (默认值: 1)", "default": 1 },
+          "pageSize": { "type": "integer", "description": "每页大小 (默认值: 10)", "default": 10 }
+        },
+        "required": ["eventId"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-act-admin.company.com/api/task/userActionService/pageQueryUserActionList';",
+        "  $headers := { 'accept': '*/*', 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'pageNo': $ARGS.pageNo, 'pageSize': $ARGS.pageSize, 'eventId': $ARGS.eventId });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_rank_reward_config_list",
+      "description": "获取榜单发奖及通知配置列表",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": { "type": "integer", "description": "活动ID" },
+          "pageNo": { "type": "integer", "description": "页码 (默认值: 1)", "default": 1 },
+          "current": { "type": "integer", "description": "当前页 (默认值: 1)", "default": 1 },
+          "pageSize": { "type": "integer", "description": "每页大小 (默认值: 200)", "default": 200 }
+        },
+        "required": ["activityId"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-act-admin.company.com/api/kael/rankRewardAdminService/configList';",
+        "  $headers := { 'accept': '*/*', 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'activityId': $ARGS.activityId, 'pageNo': $ARGS.pageNo, 'current': $ARGS.current, 'pageSize': $ARGS.pageSize });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_rank_mount_config_list",
+      "description": "获取榜单挂载配置列表",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "activityId": { "type": "integer", "description": "活动ID" },
+          "valid": { "type": "boolean", "description": "是否有效 (默认值: true)", "default": true },
+          "pageSize": { "type": "integer", "description": "每页大小 (默认值: 200)", "default": 200 }
+        },
+        "required": ["activityId"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-act-admin.company.com/api/kael/rankMountAdminService/rankMountConfigList';",
+        "  $headers := { 'accept': '*/*', 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'activityId': $ARGS.activityId, 'valid': $ARGS.valid, 'pageSize': $ARGS.pageSize });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_rank_report_event_list",
+      "description": "获取榜单事件列表",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "currentPage": { "type": "integer", "description": "当前页 (默认值: 1)", "default": 1 },
+          "pageSize": {
+            "type": "integer",
+            "description": "每页大小 (默认值: 1000)",
+            "default": 1000
+          }
+        }
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-ruban.company.com/api/action/reportEventQueryApi/pageQueryUserReportEvent';",
+        "  $headers := { 'accept': '*/*', 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'currentPage': $ARGS.currentPage, 'pageSize': $ARGS.pageSize });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_rank_user_action_list",
+      "description": "获取榜单行为列表",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "accessKey": { "type": "string", "description": "访问密钥" },
+          "tenantId": { "type": "integer", "description": "租户ID" },
+          "currentPage": { "type": "integer", "description": "当前页 (默认值: 1)", "default": 1 },
+          "pageSize": { "type": "integer", "description": "每页大小 (默认值: 100)", "default": 100 }
+        },
+        "required": ["accessKey", "tenantId"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-ruban.company.com/api/action/userActionQueryApi/pageQueryUserActionList';",
+        "  $headers := { 'accept': '*/*', 'content-type': 'application/json' };",
+        "  $bodyStr := $jsonStringify({ 'currentPage': $ARGS.currentPage, 'pageSize': $ARGS.pageSize, 'accessKey': $ARGS.accessKey, 'tenantId': $ARGS.tenantId });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "create_activity_project",
+      "description": "活动后台创建项目",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "description": "活动名称" },
+          "code": { "type": "string", "description": "活动代码" },
+          "category": {
+            "type": "string",
+            "description": "活动类别 (如: COMPANY_LIVE)",
+            "default": "COMPANY_LIVE"
+          },
+          "timeLimited": { "type": "boolean", "description": "是否有时间限制" },
+          "platformsFE": {
+            "type": "array",
+            "items": { "type": "integer" },
+            "description": "前端平台列表 (10: 10, 20: 20, 30: 直播)"
+          },
+          "icon": {
+            "type": "string",
+            "description": "活动图标URL (默认值: https://cpyphoto.hicompany.com/cpyphoto/b358e1bb3a9b46158017fd7625ff9b73.png)",
+            "default": "https://cpyphoto.hicompany.com/cpyphoto/b358e1bb3a9b46158017fd7625ff9b73.png"
+          },
+          "merchantId": { "type": "string", "description": "商户ID" },
+          "incomeTradeType": { "type": "string", "description": "收入交易类型" },
+          "outTradeType": { "type": "string", "description": "支出交易类型" },
+          "extConfig": {
+            "type": "string",
+            "description": "扩展配置 (默认值: {})",
+            "default": "{}"
+          },
+          "owner": {
+            "type": "string",
+            "description": "负责人 (默认值: zjh7890)",
+            "default": "zjh7890"
+          },
+          "showStartTime": {
+            "type": "string",
+            "description": "10展示开始时间 (ISO 8601格式，如: 2025-08-01T00:00:00+08:00)，当platformsFE包含10时需要填写"
+          },
+          "showEndTime": {
+            "type": "string",
+            "description": "10展示结束时间 (ISO 8601格式，如: 2025-08-31T23:59:59+08:00)，当platformsFE包含10时需要填写"
+          },
+          "startTime": {
+            "type": "string",
+            "description": "活动本身开始时间 (ISO 8601格式，如: 2025-08-01T00:00:00+08:00)"
+          },
+          "endTime": {
+            "type": "string",
+            "description": "活动本身结束时间 (ISO 8601格式，如: 2025-08-31T23:59:59+08:00)"
+          },
+          "companyStartTime": {
+            "type": "string",
+            "description": "直播平台展示开始时间 (ISO 8601格式，如: 2025-08-01T00:00:00+08:00)，当platformsFE包含30时需要填写"
+          },
+          "companyEndTime": {
+            "type": "string",
+            "description": "直播平台展示结束时间 (ISO 8601格式，如: 2025-08-31T23:59:59+08:00)，当platformsFE包含30时需要填写"
+          },
+          "companyStartTime": {
+            "type": "string",
+            "description": "20平台展示开始时间 (ISO 8601格式，如: 2025-08-01T00:00:00+08:00)，当platformsFE包含20时需要填写"
+          },
+          "companyEndTime": {
+            "type": "string",
+            "description": "20平台展示结束时间 (ISO 8601格式，如: 2025-08-31T23:59:59+08:00)"
+          }
+        },
+        "required": [
+          "name",
+          "code",
+          "timeLimited",
+          "platformsFE",
+          "merchantId",
+          "incomeTradeType",
+          "outTradeType",
+          "startTime",
+          "endTime"
+        ]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://test-act-admin.company.com/api/kael/activityAdminService/addOrUpdate';",
+        "  $headers := { 'accept': '*/*', 'content-type': 'application/json', 'time-format-keys': 'showStartTime,showEndTime,startTime,endTime,companyStartTime,companyEndTime,companyStartTime,companyEndTime' };",
+        "  $bodyStr := $jsonStringify({ 'name': $ARGS.name, 'code': $ARGS.code, 'category': $ARGS.category, 'timeLimited': $ARGS.timeLimited, 'platformsFE': $ARGS.platformsFE, 'icon': $ARGS.icon, 'merchantId': $ARGS.merchantId, 'incomeTradeType': $ARGS.incomeTradeType, 'outTradeType': $ARGS.outTradeType, 'extConfig': $ARGS.extConfig, 'owner': $ARGS.owner, 'showStartTime': $ARGS.showStartTime, 'showEndTime': $ARGS.showEndTime, 'startTime': $ARGS.startTime, 'endTime': $ARGS.endTime, 'companyStartTime': $ARGS.companyStartTime, 'companyEndTime': $ARGS.companyEndTime, 'companyStartTime': $ARGS.companyStartTime, 'companyEndTime': $ARGS.companyEndTime });",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_endpoint_class_by_uri_step1",
+      "description": "根据 uri 获取实现类端点第一步。注意：与 get_endpoint_class_by_uri_step2 联动使用",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uri": {
+            "type": "string",
+            "description": "精确的接口路径（如：/companycp/myCpRankInfoV2）"
+          }
+        },
+        "required": ["uri"]
+      },
+      "script": [
+        "(",
+        "  $u := 'https://test-api.company.com/api/doc/view/search/fulltext?keyword=' & $ARGS.uri & '&type=url';",
+        "  $resp := $fetch($u, { 'method': 'GET', 'headers': { 'authorization': $LISTENER_DATA.company_cloud_auth_token } });",
+        "  $d := $body($resp, 'json');",
+        "  (",
+        "    $omit := function($obj, $names){ $reduce($keys($obj)[$not($ in $names)], function($acc,$k){ $merge([$acc, {($k): $lookup($obj, $k)}]) }, {}) };",
+        "    $filtered := $filter($d, function($v){ $contains($string($v.deprecated), 'false') });",
+        "    $map($filtered, function($v){ $omit($v, ['parentId']) })",
+        "  )",
+        ")"
+      ]
+    },
+    {
+      "name": "get_endpoint_class_by_uri_step2",
+      "description": "根据 uri 获取实现类端点第二步。注意：与 get_endpoint_class_by_uri_step1 联动使用",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "integer", "description": "接口文档ID（来自 step1 的 docId）" }
+        },
+        "required": ["id"]
+      },
+      "script": [
+        "(",
+        "  $u := 'https://test-api.company.com/api/doc/view/detail?id=' & $string($ARGS.id);",
+        "  $resp := $fetch($u, { 'method': 'GET', 'headers': { 'authorization': $tokens.company_cloud_auth_token } });",
+        "  $d := $body($resp, 'json');",
+        "  { 'data': { 'interfaceName': $d.interfaceName, 'methodName': $d.methodName } }",
+        ")"
+      ]
+    },
+    {
+      "name": "get_endpoint_class_by_uri",
+      "description": "根据 uri 获取实现类端点信息，即实现该 url 逻辑的代码（注意：uri 中的 / 需替换为 %2F）",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "uri": {
+            "type": "string",
+            "description": "精确接口路径，入参需将 / 替换为 %2F，如想要查询 /user/info，就传入 %2Fuser%2Finfo"
+          }
+        },
+        "required": ["uri"]
+      },
+      "script": [
+        "(",
+        "  $u := 'https://test-gateway-web.company.com/openapi/api_desc/search?search=' & $ARGS.uri;",
+        "  $resp := $fetch($u, { 'method': 'GET' });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "get_maven_metadata",
+      "description": "获取 Maven 仓库指定 artifact 的 maven-metadata.xml。入参为 groupId/artifactId（例如：com/company/ai-user-recall-api）",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ga": {
+            "type": "string",
+            "description": "groupId/artifactId（例如：com/company/ai-user-recall-api）"
+          }
+        },
+        "required": ["ga"]
+      },
+      "script": [
+        "(",
+        "  $u := 'https://maven.company.com/nexus/content/groups/public/' & $ARGS.ga & '/maven-metadata.xml';",
+        "  $resp := $fetch($u, { 'method': 'GET', 'headers': { 'accept': 'application/xml' } });",
+        "  $body($resp, 'text')",
+        ")"
+      ]
+    },
+    {
+      "name": "query_api_gateway_logs",
+      "description": "查询网关层日志(阿里云 SLS服务)。网关层是所有接口的入口，所有请求都会经过网关层，再到 app 层，也就是先有网关日志，再有 app 层日志。支持查询 test, uat, prod 环境。先使用 mcp get_current_time 获取精准的当前的时间",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "ProjectName": {
+            "type": "string",
+            "description": "项目名称（支持 cpy-log-test, cpy-log-uat, cpy-log-prod）"
+          },
+          "from": { "type": "integer", "description": "开始时间戳（秒）" },
+          "to": { "type": "integer", "description": "结束时间戳（秒）" },
+          "query": {
+            "type": "string",
+            "description": "查询条件（如：SUG_TABLE_BALL and uid: 210090885388703748 and uri : \"/interactive/multi/game/seat/info\"），示例未经过编码，实际传参需要经过 RFC 3986 编码"
+          },
+          "page": { "type": "integer", "description": "页码（默认值: 1）", "default": 1 },
+          "size": { "type": "integer", "description": "每页大小", "default": 10 },
+          "LogStoreName": {
+            "type": "string",
+            "description": "日志存储名称（默认值: arthur-gateway-access）",
+            "default": "arthur-gateway-access"
+          }
+        },
+        "required": ["ProjectName", "from", "to", "query"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://sls4service.console.aliyun.com/console/logs/getLogs.json';",
+        "  $headers := { 'accept': 'application/json', 'content-type': 'application/x-www-form-urlencoded', 'x-csrf-token': $LISTENER_DATA.aliyun_sls_csrf_token };",
+        "  $bodyStr := 'ProjectName=' & $ARGS.ProjectName & '&LogStoreName=' & $ARGS.LogStoreName & '&from=' & $string($ARGS.from) & '&query=' & $ARGS.query & '&to=' & $string($ARGS.to) & '&Page=' & $string($ARGS.page) & '&Size=' & $string($ARGS.size) & '&Reverse=true&pSql=false&fullComplete=false&schemaFree=false&needHighlight=true';",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "query_test_or_uat_app_logs",
+      "description": "查询 test 环境或 uat 环境的阿里云SLS日志，APP 层日志，先使用 mcp_time-server_get_current_time 获取精准的当前的时间。日志一般保存4-7天",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "LogStoreName": {
+            "type": "string",
+            "description": "日志存储名称 (默认值: applog)",
+            "default": "applog"
+          },
+          "ProjectName": {
+            "type": "string",
+            "description": "项目名称 (默认值: cpy-log-test; 可取值 cpy-log-test, cpy-log-uat)",
+            "default": "cpy-log-test"
+          },
+          "from": { "type": "integer", "description": "开始时间戳 (秒)" },
+          "to": { "type": "integer", "description": "结束时间戳 (秒)" },
+          "query": {
+            "type": "string",
+            "description": "查询语句 (如 service: company-draw-service; msg: 抽奖; traceId: 794d8c90a7ed4c389cb87cfbf5eb03e4)，支持 `and` 和 `or` 连接"
+          },
+          "Page": { "type": "integer", "description": "页码 (默认值: 1)", "default": 1 },
+          "Size": { "type": "integer", "description": "每页大小", "default": 10 }
+        },
+        "required": ["from", "to", "query"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://sls4service.console.aliyun.com/console/logstoreindex/getLogs.json';",
+        "  $headers := { 'accept': 'application/json', 'content-type': 'application/x-www-form-urlencoded', 'x-csrf-token': $LISTENER_DATA.aliyun_sls_csrf_token };",
+        "  $bodyStr := 'LogStoreName=' & $ARGS.LogStoreName & '&ProjectName=' & $ARGS.ProjectName & '&from=' & $string($ARGS.from) & '&query=' & $ARGS.query & '&to=' & $string($ARGS.to) & '&Page=' & $string($ARGS.Page) & '&Size=' & $string($ARGS.Size);",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "query_prod_app_logs2",
+      "description": "查询生产环境 prod 的阿里云SLS日志，APP 层日志，先使用 mcp_time-server_get_current_time 获取精准的当前的时间。日志一般保存4-7天",
+      "valid": false,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "LogStoreName": {
+            "type": "string",
+            "description": "应用名称，必须是有效的服务名 (如: company-draw-service)"
+          },
+          "from": { "type": "integer", "description": "开始时间戳 (秒)" },
+          "to": { "type": "integer", "description": "结束时间戳 (秒)" },
+          "query": {
+            "type": "string",
+            "description": "查询语句 (如 service: company-draw-service and msg: 抽奖 and traceId: 794d8c90a7ed4c389cb87cfbf5eb03e4)，支持 `and` 和 `or` 连接"
+          },
+          "page": { "type": "integer", "description": "页码 (默认值: 1)", "default": 1 },
+          "size": { "type": "integer", "description": "每页大小", "default": 10 }
+        },
+        "required": ["LogStoreName", "from", "to", "query"]
+      },
+      "script": [
+        "(",
+        "  $url := 'https://sls4service.console.aliyun.com/console/logs/getLogs.json';",
+        "  $headers := { 'accept': 'application/json', 'content-type': 'application/x-www-form-urlencoded', 'x-csrf-token': $LISTENER_DATA.aliyun_sls_csrf_token };",
+        "  $bodyStr := 'ProjectName=company-applog-prod&LogStoreName=' & $ARGS.LogStoreName & '&from=' & $string($ARGS.from) & '&query=' & $ARGS.query & '&to=' & $string($ARGS.to) & '&Page=' & $string($ARGS.page) & '&Size=' & $string($ARGS.size) & '&Reverse=true&pSql=false&fullComplete=false&schemaFree=false&needHighlight=true';",
+        "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    },
+    {
+      "name": "query_prod_app_logs",
+      "description": "查询生产环境 prod 的阿里云SLS日志，APP 层日志，先使用 mcp_time-server_get_current_time 获取精准的当前的时间。日志一般保存4-7天。queryText 和 traceId 至少要有一个",
+      "valid": true,
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "description": "开始时间戳 (毫秒时间戳字符串，如: 1757032776901)"
+          },
+          "to": {
+            "type": "string",
+            "description": "结束时间戳 (毫秒时间戳字符串，如: 1757637576901)"
+          },
+          "queryText": {
+            "type": "string",
+            "description": "查询语句，如果没有指定 traceId，queryText查询必须带上 service，防止查询出的日志过多 (可选, 如: service: live-union-service and msg: \"call=UnionRemoteService.queryUnionAccountByUid\")",
+            "default": ""
+          },
+          "traceId": {
+            "type": "string",
+            "description": "跟踪ID (可选，默认为空字符串)",
+            "default": ""
+          }
+        },
+        "required": ["from", "to"]
+      },
+      "script": [
+        "(",
+        "  $u := 'https://monitor.company.com';",
+        "  $tab := $getOrCreateTab($u);",
+        "  $url := 'https://monitor.company.com/api/ds/query';",
+        "  $headers := { 'accept': 'application/json, text/plain, */*', 'content-type': 'application/json', 'origin': 'https://monitor.company.com', 'x-grafana-org-id': '1' };",
+        "  $bodyStr := $jsonStringify({ 'queries': [ { 'datasource': { 'uid': 'AfWKdlQ7z', 'type': 'company-datasource' }, 'key': 'Q-grafana-query-tool', 'queryText': $ARGS.queryText, 'refId': 'A', 'traceId': $ARGS.traceId, 'datasourceId': 14, 'intervalMs': 600000, 'maxDataPoints': 838 } ], 'from': $ARGS.from, 'to': $ARGS.to });",
+        "  $resp := $contentScriptFetch($tab, $url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
+        "  $body($resp, 'json')",
+        ")"
+      ]
+    }
+  ]
+}

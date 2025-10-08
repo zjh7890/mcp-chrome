@@ -31,7 +31,7 @@ export const setupTools = (server: Server) => {
 
 const handleToolCall = async (name: string, args: any): Promise<CallToolResult> => {
   try {
-    // 发送请求到Chrome扩展并等待响应（保持原始行为：直接透传 name/args）
+    // 发送请求到Chrome扩展并等待响应
     const response = await nativeMessagingHostInstance.sendRequestToExtensionAndWait(
       {
         name,
