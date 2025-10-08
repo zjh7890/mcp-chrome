@@ -30,44 +30,11 @@ export class CustomToolExecutor extends BaseBrowserToolExecutor {
 
       // 使用 script(JSONata) 统一执行，script 可为字符串或字符串数组
       const data = await this.executeScript(resolvedToolConfig, toolArgs, listenerData);
-      const result: CustomToolResult = {
-        success: true,
-        status: 200,
-        statusText: 'OK',
-        data,
-        tool: 'custom_tool',
-      };
-      console.log('CustomToolExecutor: script executed, result:', result);
-
-      if (result && result.success) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(result.data, null, 2),
-            },
-          ],
-          isError: false,
-        };
-      }
-
-      // 非成功场景：保留错误信息，标记为 isError
       return {
         content: [
           {
             type: 'text',
-            text: JSON.stringify(
-              {
-                success: false,
-                message: `Failed to execute custom tool '${toolName}'`,
-                status: result?.status,
-                statusText: result?.statusText,
-                error: result?.error || 'Unknown error',
-                data: result?.data ?? null,
-              },
-              null,
-              2,
-            ),
+            text: JSON.stringify(data),
           },
         ],
         isError: true,

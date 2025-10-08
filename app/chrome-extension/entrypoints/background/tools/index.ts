@@ -31,12 +31,13 @@ export interface ToolCallParam {
  */
 export const handleCallTool = async (param: ToolCallParam) => {
   const tool = toolsMap.get(param.name);
-  if (!tool) {
-    return createErrorResponse(`Tool ${param.name} not found`);
-  }
-
+  // 未知工具名：兜底到自定义工具执行器（按名称查找配置并执行）
   try {
-    return await tool.execute(param.args);
+    if (tool) {
+      return await tool.execute(param.args);
+    }
+    // 将未知的工具名视为自定义工具名称
+    return await customToolExecutor.execute({ toolName: param.name, args: param.args });
   } catch (error) {
     console.error(`Tool execution failed for ${param.name}:`, error);
     return createErrorResponse(
