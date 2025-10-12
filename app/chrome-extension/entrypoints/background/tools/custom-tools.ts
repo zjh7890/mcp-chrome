@@ -37,7 +37,7 @@ export class CustomToolExecutor extends BaseBrowserToolExecutor {
             text: JSON.stringify(data),
           },
         ],
-        isError: true,
+        isError: false,
       };
     } catch (error: any) {
       console.error(`CustomToolExecutor: Error executing '${toolName}':`, error);
