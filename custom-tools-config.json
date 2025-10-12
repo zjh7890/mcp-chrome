@@ -149,7 +149,7 @@
     },
     {
       "name": "get_apollo_env_and_cluster",
-      "description": "获取 Apollo 服务的环境和集群信息，如果返回的结果是 html 内容而不是 json 格式，说明登录态失效了，让用户重新登录下再进行或许操作",
+      "description": "获取 Apollo 服务的环境和集群信息，如果返回的结果是 html 内容而不是 json 格式，说明登录态失效了，让用户重新登录下再进行获取操作",
       "inputSchema": {
         "type": "object",
         "properties": {
