@@ -380,7 +380,7 @@ const saveConfig = async () => {
     let config;
     if (configText.value.trim() === '') {
       config = { customTools: [] };
-      console.error('输入为空，保存空配置');
+      console.info('输入为空，保存空配置');
     } else {
       // 使用改进的 JSON 格式验证
       const validation = validateJsonConfig(configText.value);
