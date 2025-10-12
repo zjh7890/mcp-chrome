@@ -1188,7 +1188,7 @@
         "(",
         "  $url := 'https://test-act-admin.company.com/api/kael/activityAdminService/addOrUpdate';",
         "  $headers := { 'accept': '*/*', 'content-type': 'application/json', 'time-format-keys': 'showStartTime,showEndTime,startTime,endTime,companyStartTime,companyEndTime,companyStartTime,companyEndTime' };",
-        "  $bodyStr := $jsonStringify({ 'name': $ARGS.name, 'code': $ARGS.code, 'category': $ARGS.category, 'timeLimited': $ARGS.timeLimited, 'platformsFE': $ARGS.platformsFE, 'icon': $ARGS.icon, 'merchantId': $ARGS.merchantId, 'incomeTradeType': $ARGS.incomeTradeType, 'outTradeType': $ARGS.outTradeType, 'extConfig': $ARGS.extConfig, 'owner': $ARGS.owner, 'showStartTime': $ARGS.showStartTime, 'showEndTime': $ARGS.showEndTime, 'startTime': $ARGS.startTime, 'endTime': $ARGS.endTime, 'companyStartTime': $ARGS.companyStartTime, 'companyEndTime': $ARGS.companyEndTime, 'companyStartTime': $ARGS.companyStartTime, 'companyEndTime': $ARGS.companyEndTime });",
+        "  $bodyStr := $jsonStringify({ 'name': $ARGS.name, 'code': $ARGS.code, 'category': $ARGS.category, 'timeLimited': $ARGS.timeLimited, 'platformsFE': $ARGS.platformsFE, 'icon': $ARGS.icon, 'merchantId': $ARGS.merchantId, 'incomeTradeType': $ARGS.incomeTradeType, 'outTradeType': $ARGS.outTradeType, 'extConfig': $ARGS.extConfig, 'owner': $ARGS.owner, 'showStartTime': $ARGS.showStartTime, 'showEndTime': $ARGS.showEndTime, 'startTime': $ARGS.startTime, 'endTime': $ARGS.endTime, 'companyStartTime': $ARGS.companyStartTime, 'companyEndTime': $ARGS.companyEndTime });",
         "  $resp := $fetch($url, { 'method': 'POST', 'headers': $headers, 'body': $bodyStr });",
         "  $body($resp, 'json')",
         ")"
