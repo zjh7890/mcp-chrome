@@ -366,7 +366,7 @@
     },
     {
       "name": "get_db_table_info",
-      "description": "根据表明精确查询数据库表的列表",
+      "description": "根据表名精确查询数据库表的列表",
       "valid": true,
       "inputSchema": {
         "type": "object",
